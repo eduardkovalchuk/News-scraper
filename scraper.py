@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from mongo_setup import Database
 import gridfs
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 import time
 import logging
 import re
@@ -124,7 +125,11 @@ class Scraper:
 
 
     def get_page_content(self, url):
-        self.driver.get(url)
+        # add try/catch to check if webdriver is open
+        try:
+            self.driver.get(url)
+        except WebDriverException:
+            self.driver = webdriver.Chrome(executable_path = DRIVER_BIN)
         page = self.driver.page_source
         return page
 
@@ -164,9 +169,11 @@ class Scraper:
         return categories
 
 
-    def search_by_category(self, category_name, category_list):
+    def search_by_category(self, category_name):
         category_name = category_name.decode('utf-8')
-        # category_name = category_name.encode('utf-8')
+        category_list = []
+        category_list += self.tsn_categories()
+        category_list += self.ukrnet_categories()
         category_obj = next(item for item in category_list if item['name'] == category_name)
         link = category_obj['link']
         if 'ukr.net' in link:
@@ -248,7 +255,7 @@ class Scraper:
             article_image = new_soup.find('figure', class_='js-lightgallery')
             if article_image:
                 img_src = article_image.find('img').get('src') # articles image
-                download_image(img_src)
+                self.download_image(img_src)
 
             news_chunk = {}
             news_chunk['category'] = article['category']
@@ -272,6 +279,7 @@ class Scraper:
         category_links += self.ukrnet_categories()
         category_links += self.tsn_categories()
         result = self.website_search_by_text(text, category_links)
+        return result
 
 
     def website_search_by_text(self, text_searched, category_links):

@@ -11,11 +11,12 @@ scraper = Scraper()
 
 
 class CategoryForm(Form):
-    category = SelectField('News category', validators=[validators.InputRequired])
+    # category = SelectField('News category', validators=[validators.InputRequired])
+    category = StringField('News category', validators=[validators.InputRequired()])
 
 
 class TokenForm(Form):
-    text = StringField('Text search', validators=[validators.InputRequired])
+    text = StringField('Text search', validators=[validators.InputRequired()])
 
 
 @app.route('/', methods=['GET'])
@@ -25,15 +26,18 @@ def index():
 
 @app.route('/category_search', methods=['GET', 'POST'])
 def category_search():
-    categories = scraper.tsn_categories()
-    categories += scraper.ukrnet_categories()
-    category_list = [c['name'] for c in categories]
+    # categories = scraper.tsn_categories()
+    # categories += scraper.ukrnet_categories()
+    # category_list = [c['name'] for c in categories]
+    # print('--------------------')
+    # print(category_list)
     form = CategoryForm(request.form)
-    form.category.choices = category_list
+    # form.category.choices = category_list
 
     if request.method == 'POST' and form.validate():
-        category_choice = form.category.data
-        result = scraper.search_by_category(category_choice, categories)
+        # category_choice = form.category.data
+        category_choice = request.form['category'].encode('utf-8')
+        result = scraper.search_by_category(category_choice)
         return render_template('news_result.html', content=result)
     return render_template('category_search.html', form=form)
 
@@ -44,7 +48,7 @@ def text_search():
     if request.method == 'POST' and form.validate():
         searched_text = request.form['token']
 
-        result = scraper.search_by_text(searched_text, searched_text)
+        result = scraper.search_by_text(searched_text)
         return render_template('news_result', content=result)
     return render_template('text_search.html', form=form)
 
